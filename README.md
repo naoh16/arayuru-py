@@ -1,2 +1,12 @@
 # arayuru-py
-Python/PyQtGraph/PyQt4で作った読み上げ音声収録ツール
+Python3/PyQtGraph(PyQt4)/PyAudioで作った読み上げ音声収録ツール
+
+## Requirement
+
+    $ conda install pyqt
+    $ python -m pip install pyqtgraph pyaudio
+
+## Usage
+
+    $ python arayuru.py sample.txt
+
