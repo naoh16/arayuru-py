@@ -273,12 +273,22 @@ def main():
     """ event listner """
     def click_start_record():
         my_widget.rec_button.setText("REC STOP")
-        my_widget.rec_button.clicked.connect(click_stop_record)
+        try:
+            my_widget.rec_button.clicked.disconnect() 
+        except Exception:
+            pass
+        finally:
+            my_widget.rec_button.clicked.connect(click_stop_record)
         my_widget.wave_recorder.start_record(my_widget.filename_text.text())
 
     def click_stop_record():
         my_widget.rec_button.setText("REC START")
-        my_widget.rec_button.clicked.connect(click_start_record)
+        try:
+            my_widget.rec_button.clicked.disconnect() 
+        except Exception:
+            pass
+        finally:
+            my_widget.rec_button.clicked.connect(click_start_record)
         my_widget.wave_recorder.stop_record()
 
     def click_start_play():
