@@ -12,7 +12,7 @@
 #
 # Copyright (c) 2015 Sunao Hara, Okayama University.
 
-
+import os
 import sys
 import codecs
 
@@ -134,11 +134,18 @@ class MyWidget(QtGui.QWidget):
         fp = codecs.open(self.dataset_filename, 'r', 'utf-8')
         self.dataset_texts = fp.readlines()
         fp.close()
+        self.reset_datafile_view()
 
+    def load_datafile_default(self):
+        self.dataset_filename = "A";
+        self.dataset_texts = ["A01 あらゆる現実をすべて自分の方へねじ曲げたのだ。"]
+        self.reset_datafile_view()
+
+    def reset_datafile_view(self):
         self.cur_line_num = 0;
         d = self.dataset_texts[0].split()
 
-        self.datafile_text.setText(filename)
+        self.datafile_text.setText(self.dataset_filename)
         self.filenum_text.setText('1 / ' + str(len(self.dataset_texts)))
         self.filename_text.setText(d[0] + '.wav')
         self.reading_text.setText(d[1])
@@ -243,6 +250,10 @@ class WaveRecorder():
         self.wavefile.close()
 
 def main():
+    # Create directory for recorded wavefiles
+    if not os.path.exists(DIRNAME):
+        os.mkdir(DIRNAME)
+    
     app = QtGui.QApplication(sys.argv)
     widget = QtGui.QWidget()
 
@@ -283,8 +294,10 @@ def main():
     my_widget.rec_button.clicked.connect(click_start_record)
     my_widget.play_button.clicked.connect(click_start_play)
 
-    #my_widget.load_datafile('news.txt')
-    my_widget.load_datafile(sys.argv[1])
+    try:
+        my_widget.load_datafile(sys.argv[1])
+    except IndexError:
+        my_widget.load_datafile_default()
     my_widget.next_button.clicked.connect(my_widget.next_datafile)
     my_widget.previous_button.clicked.connect(my_widget.previous_datafile)
 
