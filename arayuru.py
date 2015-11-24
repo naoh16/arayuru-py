@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# vim: ft=python ts=4 sw=4 et
 # Recording application
 #
 # Requirement
@@ -97,6 +98,9 @@ class MyWidget(QtGui.QWidget):
         self.play_timer.start(REFRESH_INTERVAL_MS)
 
     def onPlayData(self):
+        if self.wave_player.stream is None:
+            return
+
         if self.wave_player.stream.is_active():
             self.wave_widget.set_current_time(self.wave_player.get_current_time())
         else:
@@ -259,6 +263,7 @@ class MyWidget(QtGui.QWidget):
 class WavePlayer():
     def __init__(self):
         self.is_stop_requested = False
+        self.stream = None
 
         self.lock = threading.Lock()
 
@@ -299,8 +304,10 @@ class WavePlayer():
         with self.lock:
             self.is_stop_requested = True
 
-        self.stream.stop_stream()
-        self.stream.close()
+        if not self.stream is None:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.stream = None
 
         self.wavefile.close()
 
