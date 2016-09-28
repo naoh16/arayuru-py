@@ -218,7 +218,7 @@ class MyWidget(QtGui.QWidget):
             self.reset_data()
 
     def open_readfile(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self, 'OpenFile')
+        filename = QtGui.QFileDialog.getOpenFileName(self, u'読み上げリストファイルを開く', filter=r'Text Files(*.txt +.tsv *.list);;All Files(*.*)')
         if os.path.isfile(filename):
             self.load_datafile(filename)
             self.reset_data()
