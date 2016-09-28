@@ -202,6 +202,10 @@ class MyWidget(QtGui.QWidget):
         else:
             self.wave_widget.reset_waveform()
 
+        # Toggle enables of buttons
+        self.previous_button.setEnabled(self.cur_line_num != 0)
+        self.next_button.setEnabled(self.cur_line_num+1 < len(self.dataset_texts))
+
     def next_datafile(self):
         if self.cur_line_num + 1 < len(self.dataset_texts):
             self.cur_line_num += 1
@@ -215,8 +219,9 @@ class MyWidget(QtGui.QWidget):
 
     def open_readfile(self):
         filename = QtGui.QFileDialog.getOpenFileName(self, 'OpenFile')
-        self.load_datafile(filename)
-        self.reset_data()
+        if os.path.isfile(filename):
+            self.load_datafile(filename)
+            self.reset_data()
 
     def previous_datafile(self):
         if self.cur_line_num - 1 >= 0:
