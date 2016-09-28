@@ -8,18 +8,18 @@
 #   pyaudio
 #
 # You can install them as below command:
-#   $ conda install pyqt
-#   $ python -m pip install pyqtgraph pyaudio
+#   $ conda install pyqt=4 pyqtgraph
+#   $ python -m pip install pyaudio
 #
-# Copyright (c) 2015 Sunao Hara, Okayama University.
+# Copyright (c) 2015-2016 Sunao Hara, Okayama University.
 
 import os
 import sys
 import codecs
 
-#from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtCore
+#from pyqtgraph.Qt import QtGui, QtCore
 
 import pyaudio
 import threading
