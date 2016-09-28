@@ -43,7 +43,7 @@ class WavePlotWidget(pg.PlotWidget):
     def __init__(self, parent=None):
         pg.PlotWidget.__init__(self, parent=parent)
 
-        self.setLimits(xMin=0, minYRange=20001, minXRange=3)
+        self.setLimits(xMin=0, minYRange=20001, minXRange=2)
 
         item = self.getPlotItem()
         item.setMouseEnabled(y = False) # y軸固定
@@ -62,6 +62,8 @@ class WavePlotWidget(pg.PlotWidget):
 
     def reset_waveform(self):
         self.wave_buffer = np.array([])
+        self.update_plot_waveform()
+        self.set_current_time(0)
 
     def add_waveform(self, waveform_frames):
         self.wave_buffer = np.append(self.wave_buffer, waveform_frames)
@@ -71,6 +73,11 @@ class WavePlotWidget(pg.PlotWidget):
         x = np.linspace(start=0, stop=len(self.wave_buffer)/SAMPLING_RATE, num=len(self.wave_buffer))
         self.plot_waveform.setData(x=x, y=self.wave_buffer)
 
+    def load_wavefile(self, wavefile):
+        self.reset_waveform()
+        with wave.open(wavefile, 'rb') as wf:
+            raw_data = wf.readframes( wf.getnframes() )
+            self.add_waveform(np.fromstring(raw_data, dtype=np.int16))
 
 class MyWidget(QtGui.QWidget):
     def __init__(self, parent=None):
@@ -114,45 +121,53 @@ class MyWidget(QtGui.QWidget):
         self.next_button.clicked.connect(self.next_datafile)
         self.previous_button.clicked.connect(self.previous_datafile)
 
+        self.open_readfile_button.clicked.connect(self.open_readfile)
+
     def init_ui(self):
         self.rec_button = QtGui.QPushButton("REC START", parent=self)
+        self.rec_button.setFixedHeight(50)
         self.play_button  = QtGui.QPushButton("PLAY", parent=self)
+        self.play_button.setFixedHeight(50)
 
         self.previous_button = QtGui.QPushButton("<-", parent=self)
+        self.previous_button.setFixedHeight(50)
         self.next_button     = QtGui.QPushButton("->", parent=self)
+        self.next_button.setFixedHeight(50)
         #self.zoomup_button   = QtGui.QPushButton("+", parent=self)
         #self.zoomdown_button = QtGui.QPushButton("-", parent=self)
 
+        self.open_readfile_button = QtGui.QPushButton("LOAD", parent=self)
+
         self.reading_text = QtGui.QTextEdit(self)
         self.reading_text.setFontPointSize(20)
+        self.reading_text.setReadOnly(True)
         self.reading_text.setText(u"あらゆる現実をすべて自分の方へねじ曲げたのだ。");
 
-        self.datafile_text = QtGui.QLineEdit(self)
-        self.datafile_text.setText("(null)");
-        self.filenum_text = QtGui.QLineEdit(self)
-        self.filenum_text.setText("0 / 0");
-        self.filename_text = QtGui.QLineEdit(self)
-        self.filename_text.setText("(null).wav");
+        self.datafile_text = QtGui.QLineEdit("(null)", self)
+        self.datafile_text.setReadOnly(True)
+        self.filenum_text = QtGui.QLineEdit("0 / 0", self)
+        self.filenum_text.setReadOnly(True)
+        self.filename_text = QtGui.QLineEdit("(null).wav", self)
 
         self.wave_widget = WavePlotWidget()
 
         layout = QtGui.QGridLayout()
 
-        layout.addWidget(self.datafile_text, 0, 0, 1, 1)
-        layout.addWidget(self.filenum_text,  0, 1, 1, 1)
-        layout.addWidget(self.filename_text, 0, 2, 1, -1)
+        layout.addWidget(self.datafile_text, 0, 0, 1, 2)
+        layout.addWidget(self.open_readfile_button, 0, 2, 1, 1)
 
-        layout.addWidget(self.reading_text, 1, 0, 2, 4)
+        layout.addWidget(self.filenum_text,  1, 0)
+        layout.addWidget(self.filename_text, 1, 1)
 
-        layout.addWidget(self.previous_button, 3, 0, 1, 1)
-        #layout.addWidget(self.zoomup_button,   3, 1, 1, 1)
-        #layout.addWidget(self.zoomdown_button, 3, 2, 1, 1)
-        layout.addWidget(self.next_button,     3, 3, 1, 1)
+        layout.addWidget(self.reading_text, 2, 0, 2, 2)
 
-        layout.addWidget(self.rec_button,   4, 0, 1, 2)
-        layout.addWidget(self.play_button,  4, 3, 1, 1)
+        layout.addWidget(self.previous_button, 4, 0, 1, 1)
+        layout.addWidget(self.next_button,     4, 1, 1, 1)
 
-        layout.addWidget(self.wave_widget,  5, 0, 4, 4)
+        layout.addWidget(self.rec_button,   5, 0, 1, 2)
+        layout.addWidget(self.play_button,  5, 2, 1, 1)
+
+        layout.addWidget(self.wave_widget,  6, 0, 4, 4)
 
         self.setLayout(layout)
 
@@ -167,6 +182,7 @@ class MyWidget(QtGui.QWidget):
         self.dataset_filename = "A";
         self.dataset_texts = ["A01 あらゆる現実をすべて自分の方へねじ曲げたのだ。"]
         self.reset_datafile_view()
+        self.reset_data()
 
     def reset_datafile_view(self):
         self.cur_line_num = 0;
@@ -179,7 +195,12 @@ class MyWidget(QtGui.QWidget):
 
     def reset_data(self):
         self.wave_recorder = WaveRecorder()
-        self.wave_widget.reset_waveform()
+
+        print(DIRNAME + '/' + self.filename_text.text())
+        if os.path.isfile(DIRNAME + '/' + self.filename_text.text()):
+            self.wave_widget.load_wavefile(DIRNAME + '/' + self.filename_text.text())
+        else:
+            self.wave_widget.reset_waveform()
 
     def next_datafile(self):
         if self.cur_line_num + 1 < len(self.dataset_texts):
@@ -191,6 +212,11 @@ class MyWidget(QtGui.QWidget):
             self.reading_text.setText(d[1])
 
             self.reset_data()
+
+    def open_readfile(self):
+        filename = QtGui.QFileDialog.getOpenFileName(self, 'OpenFile')
+        self.load_datafile(filename)
+        self.reset_data()
 
     def previous_datafile(self):
         if self.cur_line_num - 1 >= 0:
@@ -258,6 +284,7 @@ class MyWidget(QtGui.QWidget):
         self.rec_button.setEnabled(True)
         self.wave_player.stop()
         self.play_timer.stop()
+        self.wave_widget.set_current_time(0)
 
 
 class WavePlayer():
