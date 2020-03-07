@@ -187,7 +187,11 @@ class MyWidget(QtGui.QWidget):
         self.datafile_text.setText(self.reading_script.filename())
         self.filenum_text.setText("{:d}/{:d}".format(scr['number'], self.reading_script.count()))
         self.filename_text.setText(scr['id'] + '.wav')
-        self.reading_text.setText(scr['text'])
+
+        if 'pron' in scr:
+            self.reading_text.setText(scr['text'] + '\n--\n' + scr['pron'])
+        else:
+            self.reading_text.setText(scr['text'])
 
         # Update UI related to the script information
         self.previous_button.setEnabled(self.reading_script.has_prev())
@@ -299,9 +303,12 @@ class ReadingScript():
                 # Read contents as 2-column CSV/TSV file
                 # (1) Script ID
                 # (2) Script text
-                rows = re.split(r'[ \t,]+', line, 2)
+                # (3) Pronounciation-hint text (optional)
+                rows = re.split(r'[ \t,]+', line)
                 num = num + 1
                 datum = {'number': num, 'id': rows[0], 'text': rows[1]}
+                if (len(rows) >= 3):
+                    datum['pron'] = rows[2]
                 self._script_data.append(datum)
 
         self._filename = filename
