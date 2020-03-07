@@ -3,21 +3,21 @@
 # Recording application
 #
 # Requirement
-#   PyQt4
+#   PyQt5
 #   pyqtgraph
 #   pyaudio
 #
 # You can install them as below command:
-#   $ conda install pyqt=4 pyqtgraph
+#   $ conda install pyqt=5 pyqtgraph
 #   $ python -m pip install pyaudio
 #
-# Copyright (c) 2015-2016 Sunao Hara, Okayama University.
+# Copyright (c) 2015-2020 Sunao Hara, Okayama University.
 
 import os
 import sys
 import codecs
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
 #from pyqtgraph.Qt import QtGui, QtCore
 
