@@ -16,6 +16,7 @@
 import os
 import sys
 import codecs
+import re
 
 from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
@@ -84,6 +85,8 @@ class MyWidget(QtGui.QWidget):
 
         self.wave_recorder = WaveRecorder()
         self.wave_player = WavePlayer()
+
+        self.reading_script = ReadingScript()
 
         self.init_ui()
         self.init_default_listner()
@@ -170,29 +173,27 @@ class MyWidget(QtGui.QWidget):
 
         self.setLayout(layout)
 
-    def load_datafile(self, filename):
-        self.dataset_filename = filename
-        fp = codecs.open(self.dataset_filename, 'r', 'utf-8')
-        self.dataset_texts = fp.readlines()
-        fp.close()
-        self.reset_datafile_view()
+    def load_datafile(self, filename=None):
+        if filename:
+            self.reading_script.load_file(filename)
+        
+        self.update_datafile_view()
+        self.update_wavedata()
 
-    def load_datafile_default(self):
-        self.dataset_filename = "A"
-        self.dataset_texts = ["A01 あらゆる現実をすべて自分の方へねじ曲げたのだ。"]
-        self.reset_datafile_view()
-        self.reset_data()
+    def update_datafile_view(self):
+        scr = self.reading_script.current_script()
 
-    def reset_datafile_view(self):
-        self.cur_line_num = 0
-        d = self.dataset_texts[0].split()
+        # Update Script information
+        self.datafile_text.setText(self.reading_script.filename())
+        self.filenum_text.setText("{:d}/{:d}".format(scr['number'], self.reading_script.count()))
+        self.filename_text.setText(scr['id'] + '.wav')
+        self.reading_text.setText(scr['text'])
 
-        self.datafile_text.setText(self.dataset_filename)
-        self.filenum_text.setText('1 / ' + str(len(self.dataset_texts)))
-        self.filename_text.setText(d[0] + '.wav')
-        self.reading_text.setText(d[1])
+        # Update UI related to the script information
+        self.previous_button.setEnabled(self.reading_script.has_prev())
+        self.next_button.setEnabled(self.reading_script.has_next())
 
-    def reset_data(self):
+    def update_wavedata(self):
         self.wave_recorder = WaveRecorder()
 
         print(DIRNAME + '/' + self.filename_text.text())
@@ -201,37 +202,21 @@ class MyWidget(QtGui.QWidget):
         else:
             self.wave_widget.reset_waveform()
 
-        # Toggle enables of buttons
-        self.previous_button.setEnabled(self.cur_line_num != 0)
-        self.next_button.setEnabled(self.cur_line_num+1 < len(self.dataset_texts))
-
     def next_datafile(self):
-        if self.cur_line_num + 1 < len(self.dataset_texts):
-            self.cur_line_num += 1
-            d = self.dataset_texts[self.cur_line_num].split()
-
-            self.filenum_text.setText(str(self.cur_line_num + 1) + ' / ' + str(len(self.dataset_texts)))
-            self.filename_text.setText(d[0] + '.wav')
-            self.reading_text.setText(d[1])
-
-            self.reset_data()
+        self.reading_script.next_script()
+        self.update_datafile_view()
+        self.update_wavedata()
 
     def open_readfile(self):
         filename = QtGui.QFileDialog.getOpenFileName(self, u'読み上げリストファイルを開く', filter=r'Text Files(*.txt +.tsv *.list);;All Files(*.*)')
         if os.path.isfile(filename):
-            self.load_datafile(filename)
-            self.reset_data()
+            self.reading_script.load_file(filename)
+            self.update_wavedata()
 
     def previous_datafile(self):
-        if self.cur_line_num - 1 >= 0:
-            self.cur_line_num -= 1
-            d = self.dataset_texts[self.cur_line_num].split()
-
-            self.filenum_text.setText(str(self.cur_line_num + 1) + ' / ' + str(len(self.dataset_texts)))
-            self.filename_text.setText(d[0] + '.wav')
-            self.reading_text.setText(d[1])
-
-            self.reset_data()
+        self.reading_script.prev_script()
+        self.update_datafile_view()
+        self.update_wavedata()
 
     def click_start_record(self):
         self.rec_button.setText("REC STOP")
@@ -289,6 +274,63 @@ class MyWidget(QtGui.QWidget):
         self.wave_player.stop()
         self.play_timer.stop()
         self.wave_widget.set_current_time(0)
+
+class ReadingScript():
+    def __init__(self):
+        self._filename = ""
+        self._script_data = list({'number': 1, 'id': 'A01', 'text': 'あらゆる現実をすべて自分の方へねじ曲げたのだ。'}) # this is dummy data
+        self._current_text_number = 1  # This number should be start with 1 if this instance is activated
+
+    def dump(self):
+        for datum in self._script_data:
+            print("{id:s}\t{text:s}".format(**datum))
+
+    def load_file(self, filename):
+        num = 0
+        self._script_data = list()
+        with open(filename, 'r', encoding='utf-8') as f:
+            for line in f:
+                # Skip comment line
+                if line.startswith('#'):
+                    continue
+                
+                # Read contents as 2-column CSV/TSV file
+                # (1) Script ID
+                # (2) Script text
+                rows = re.split(r'[ \t,]+', line, 2)
+                num = num + 1
+                datum = {'number': num, 'id': rows[0], 'text': rows[1]}
+                self._script_data.append(datum)
+
+        self._filename = filename
+        self._current_text_number = 1
+
+    def has_prev(self):
+        return self._current_text_number > 1
+
+    def has_next(self):
+        return self._current_text_number < self.count()
+
+    def count(self):
+        return len(self._script_data)
+
+    def filename(self):
+        return self._filename
+
+    def current_script(self):
+        return self._script_data[self._current_text_number-1]
+
+    def next_script(self):
+        if self.has_next():
+            self._current_text_number = self._current_text_number + 1
+
+        return self._script_data[self._current_text_number-1]
+
+    def prev_script(self):
+        if self.has_prev():
+            self._current_text_number = self._current_text_number - 1
+
+        return self._script_data[self._current_text_number-1]
 
 
 class WavePlayer():
@@ -432,7 +474,7 @@ def main():
     try:
         my_widget.load_datafile(sys.argv[1])
     except IndexError:
-        my_widget.load_datafile_default()
+        my_widget.load_datafile(None)
 
     return app.exec_()
 

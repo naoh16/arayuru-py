@@ -1,3 +1,5 @@
+# This is sample list of reading script.
+# If the line start-with '#', the line is skipped. 
 n001    部会としての条約案をまとめて、第五十回総会に報告する。
 n002	打線は、一番から四番まで左打者。
 n003	どんな問題が起きているのでしょうか。
