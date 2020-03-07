@@ -355,10 +355,35 @@ class WaveRecorder():
             signal_data = self.signal_data
             self.signal_data = []
             return signal_data
+    
+    def rotate_file(self, filename):
+        fileparts = filename.rsplit('.', 2)
+        suffix_number = 0
+        
+        # Find exist target file and its rotated files
+        if os.path.exists("{:s}.{:s}".format(fileparts[0], fileparts[1])) :
+            suffix_number = suffix_number + 1
+        while os.path.exists("{:s},{:02d}.{:s}".format(fileparts[0], suffix_number, fileparts[1])) :
+            suffix_number = suffix_number + 1
+            if suffix_number >= 100:
+                break
+        
+        # If we have rotated file, rotate each filenames
+        while suffix_number > 1:
+            src_filename = "{:s},{:02d}.{:s}".format(fileparts[0], suffix_number-1, fileparts[1])
+            dst_filename = "{:s},{:02d}.{:s}".format(fileparts[0], suffix_number, fileparts[1])
+            os.rename(src_filename, dst_filename)
+            suffix_number = suffix_number - 1
+        if suffix_number == 1:
+            src_filename = "{:s}.{:s}".format(fileparts[0], fileparts[1])
+            dst_filename = "{:s},{:02d}.{:s}".format(fileparts[0], suffix_number, fileparts[1])
+            os.rename(src_filename, dst_filename)
+
+        return filename
 
     def start_record(self, filename):
         self.is_stop_requested = False
-        self.wavefile = wave.open(DIRNAME + '/' + filename, 'w')
+        self.wavefile = wave.open(self.rotate_file(DIRNAME + '/' + filename), 'w')
         self.wavefile.setnchannels(CHANNEL_NUM)
         self.wavefile.setsampwidth(int(BIT_PER_SAMPLE / 8))
         self.wavefile.setframerate(SAMPLING_RATE)
