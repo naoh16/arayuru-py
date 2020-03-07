@@ -218,10 +218,10 @@ class MyWidget(QtGui.QWidget):
     def update_wavedata(self):
         self.wave_recorder = WaveRecorder()
 
-        print(DIRNAME + '/' + self.filename_text.text())
         if os.path.isfile(DIRNAME + '/' + self.filename_text.text()):
             self.wave_widget.load_wavefile(DIRNAME + '/' + self.filename_text.text())
             self.play_button.setEnabled(True)
+            sys.stderr.write('INFO: Load {:s}/{:s}\n'.format(DIRNAME, self.filename_text.text()))
         else:
             self.wave_widget.reset_waveform()
             self.play_button.setEnabled(False)
@@ -270,6 +270,8 @@ class MyWidget(QtGui.QWidget):
 
         self.wave_recorder.stop_record()
         self.record_timer.stop()
+
+        sys.stderr.write('INFO: SAVE: {:s}\n'.format(self.filename_text.text()))
 
     def click_start_play(self):
         self.play_button.setText("STOP")
@@ -441,11 +443,13 @@ class WaveRecorder():
             src_filename = "{:s},{:02d}.{:s}".format(fileparts[0], suffix_number-1, fileparts[1])
             dst_filename = "{:s},{:02d}.{:s}".format(fileparts[0], suffix_number, fileparts[1])
             os.rename(src_filename, dst_filename)
+            sys.stderr.write('INFO: ROTATE: {:s} --> {:s}\n'.format(src_filename, dst_filename))
             suffix_number = suffix_number - 1
         if suffix_number == 1:
             src_filename = "{:s}.{:s}".format(fileparts[0], fileparts[1])
             dst_filename = "{:s},{:02d}.{:s}".format(fileparts[0], suffix_number, fileparts[1])
             os.rename(src_filename, dst_filename)
+            sys.stderr.write('INFO: ROTATE: {:s} --> {:s}\n'.format(src_filename, dst_filename))
 
         return filename
 
