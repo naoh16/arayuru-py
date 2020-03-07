@@ -91,6 +91,24 @@ class MyWidget(QtGui.QWidget):
         self.init_ui()
         self.init_default_listner()
 
+    def keyPressEvent(self, e):
+
+        # KEY_LEFT:
+        if e.key() == QtCore.Qt.Key_Left:
+            self.previous_datafile()
+            return
+
+        # KEY_RIGHT:
+        if e.key() == QtCore.Qt.Key_Right:
+            self.next_datafile()
+            return
+
+        # KEY_SPACE:
+        if e.key() == QtCore.Qt.Key_Space:
+            if self.rec_button.isEnabled():
+                self.rec_button.click()
+            return
+
     def set_record_timer(self):
         self.record_timer = QtCore.QTimer()
         self.record_timer.timeout.connect(self.onRecordData)
