@@ -19,7 +19,6 @@ import codecs
 
 from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
-#from pyqtgraph.Qt import QtGui, QtCore
 
 import pyaudio
 import threading
@@ -141,7 +140,7 @@ class MyWidget(QtGui.QWidget):
         self.reading_text = QtGui.QTextEdit(self)
         self.reading_text.setFontPointSize(20)
         self.reading_text.setReadOnly(True)
-        self.reading_text.setText(u"あらゆる現実をすべて自分の方へねじ曲げたのだ。");
+        self.reading_text.setText(u"あらゆる現実をすべて自分の方へねじ曲げたのだ。")
 
         self.datafile_text = QtGui.QLineEdit("(null)", self)
         self.datafile_text.setReadOnly(True)
@@ -172,20 +171,20 @@ class MyWidget(QtGui.QWidget):
         self.setLayout(layout)
 
     def load_datafile(self, filename):
-        self.dataset_filename = filename;
+        self.dataset_filename = filename
         fp = codecs.open(self.dataset_filename, 'r', 'utf-8')
         self.dataset_texts = fp.readlines()
         fp.close()
         self.reset_datafile_view()
 
     def load_datafile_default(self):
-        self.dataset_filename = "A";
+        self.dataset_filename = "A"
         self.dataset_texts = ["A01 あらゆる現実をすべて自分の方へねじ曲げたのだ。"]
         self.reset_datafile_view()
         self.reset_data()
 
     def reset_datafile_view(self):
-        self.cur_line_num = 0;
+        self.cur_line_num = 0
         d = self.dataset_texts[0].split()
 
         self.datafile_text.setText(self.dataset_filename)
@@ -421,18 +420,11 @@ def main():
         os.mkdir(DIRNAME)
 
     app = QtGui.QApplication(sys.argv)
-#    widget = QtGui.QWidget()
-
-#    my_widget = MyWidget(parent=widget)
-    #panel_layout = QtGui.QVBoxLayout()
-    #panel_layout.addWidget(my_widget)
-    #widget.setLayout(panel_layout)
     my_widget = MyWidget(parent=None)
 
     ### Main Window
     main_window = QtGui.QMainWindow()
     main_window.setWindowTitle("ARAYURU.PY")
-    # main_window.setCentralWidget(widget)
     main_window.setCentralWidget(my_widget)
     main_window.move(100, 100)
     main_window.show()
