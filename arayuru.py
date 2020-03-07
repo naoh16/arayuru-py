@@ -77,7 +77,7 @@ class WavePlotWidget(pg.PlotWidget):
         self.reset_waveform()
         with wave.open(wavefile, 'rb') as wf:
             raw_data = wf.readframes( wf.getnframes() )
-            self.add_waveform(np.fromstring(raw_data, dtype=np.int16))
+            self.add_waveform(np.frombuffer(raw_data, dtype=np.int16))
 
 class MyWidget(QtGui.QWidget):
     def __init__(self, parent=None):
@@ -199,8 +199,10 @@ class MyWidget(QtGui.QWidget):
         print(DIRNAME + '/' + self.filename_text.text())
         if os.path.isfile(DIRNAME + '/' + self.filename_text.text()):
             self.wave_widget.load_wavefile(DIRNAME + '/' + self.filename_text.text())
+            self.play_button.setEnabled(True)
         else:
             self.wave_widget.reset_waveform()
+            self.play_button.setEnabled(False)
 
     def next_datafile(self):
         self.reading_script.next_script()
@@ -438,7 +440,7 @@ class WaveRecorder():
     def cb_recording(self, in_data, frame_count, time_info, status):
         self.wavefile.writeframes(in_data)
 
-        np_data = np.fromstring(in_data, dtype=np.int16).astype(np.float32)
+        np_data = np.frombuffer(in_data, dtype=np.int16).astype(np.float32)
 
         with self.lock:
             self.signal_data.append(np_data)
