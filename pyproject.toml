@@ -1,0 +1,11 @@
+[project]
+name = "arayuru-py"
+version = "0.3.0"
+description = "Python/PyQtGraph/PySide6で作った読み上げ音声収録ツール"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pyaudio>=0.2.14",
+    "pyqtgraph>=0.13.7",
+    "pyside6<6.9",
+]
