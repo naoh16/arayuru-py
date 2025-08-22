@@ -35,19 +35,49 @@ import numpy as np
 
 DIRNAME = "record"
 CHANNEL_NUM = 1
-BIT_PER_SAMPLE = 16
-SAMPLING_RATE  = 16000
+#AUDIO_FORMAT = pyaudio.paInt16
+AUDIO_FORMAT = pyaudio.paInt24
+#AUDIO_FORMAT = pyaudio.paFloat32  # 32bit-float is not tested.
+SAMPLING_RATE  = 48000
 BUFSIZE_SEC = 0.1
 REFRESH_INTERVAL_MS = 160
 
+match AUDIO_FORMAT:
+    case pyaudio.paInt16: NUMPY_FORMAT = np.int16
+    case pyaudio.paInt24: NUMPY_FORMAT = np.int32
+    case pyaudio.paFloat32: NUMPY_FORMAT = np.float32
+
 # create pyAudio Object
 pa = pyaudio.PyAudio()
+
+print(pa.get_default_output_device_info())
+print(pa.get_default_input_device_info())
+PREFERED_API_ID = 0
+for i in range(pa.get_host_api_count()):
+    apiinfo = pa.get_host_api_info_by_index(i)
+    if 'WASAPI' in apiinfo['name']:
+        PREFERED_API_ID = i
+print(f'API: {pa.get_host_api_info_by_index(PREFERED_API_ID)}')
+
+def _i24_from_raw(byte_data: np.ndarray[np.uint8]):
+    _data = np.frombuffer(byte_data, dtype=np.uint8).reshape(-1, 3)
+    np_data = _data[:,0].astype(np.int32) \
+            + (_data[:,1].astype(np.int32) << 8) \
+            + (_data[:,2].astype(np.int32) << 16)
+    # flip by negative bit
+    np_data[np_data >= 0x800000] -= 0x1000000
+    return np_data
 
 class WavePlotWidget(pg.PlotWidget):
     def __init__(self, parent=None):
         pg.PlotWidget.__init__(self, parent=parent)
 
-        self.setLimits(xMin=0, minYRange=20001, minXRange=2)
+        if AUDIO_FORMAT != pyaudio.paFloat32:
+            self.setLimits(xMin=0, minYRange=20001, minXRange=2)
+        else:
+            self.setLimits(xMin=0, minYRange=1.0, minXRange=2)
+            
+        self.showGrid(x=True, y=True, alpha=0.5)
 
         item = self.getPlotItem()
         item.setMouseEnabled(y = False) # y軸固定
@@ -79,9 +109,16 @@ class WavePlotWidget(pg.PlotWidget):
 
     def load_wavefile(self, wavefile):
         self.reset_waveform()
+        cnt = 0
         with wave.open(wavefile, 'rb') as wf:
             raw_data = wf.readframes( wf.getnframes() )
-            self.add_waveform(np.frombuffer(raw_data, dtype=np.int16))
+
+            if wf.getsampwidth() == 2:  #   AUDIO_FORMAT==pyaudio.paInt16:
+                self.add_waveform(np.frombuffer(raw_data, dtype=np.int16))
+            elif wf.getsampwidth() == 3:  #   AUDIO_FORMAT==pyaudio.paInt24:
+                self.add_waveform(_i24_from_raw(raw_data))
+            else:
+                self.add_waveform(np.frombuffer(raw_data, dtype=NUMPY_FORMAT))
 
 class MyWidget(QWidget):
     def __init__(self, *args, **kwargs):
@@ -463,19 +500,33 @@ class WaveRecorder():
         self.is_stop_requested = False
         self.wavefile = wave.open(self.rotate_file(DIRNAME + '/' + filename), 'w')
         self.wavefile.setnchannels(CHANNEL_NUM)
-        self.wavefile.setsampwidth(int(BIT_PER_SAMPLE / 8))
+        self.wavefile.setsampwidth(pa.get_sample_size(AUDIO_FORMAT))
         self.wavefile.setframerate(SAMPLING_RATE)
-        self.stream = pa.open(stream_callback = self.cb_recording,
-            format = pa.get_format_from_width(int(BIT_PER_SAMPLE / 8)),
+        self.stream = pa.open(
+            stream_callback = self.cb_recording if AUDIO_FORMAT != pyaudio.paInt24 else self.cb_recording_i24,
+            format = AUDIO_FORMAT,
             channels = CHANNEL_NUM, rate = SAMPLING_RATE,
-            frames_per_buffer = int(BUFSIZE_SEC * CHANNEL_NUM * SAMPLING_RATE * BIT_PER_SAMPLE / 8),
+            frames_per_buffer = int(BUFSIZE_SEC * CHANNEL_NUM * SAMPLING_RATE * pa.get_sample_size(AUDIO_FORMAT)),
+            input_host_api_specific_stream_info=pa.get_host_api_info_by_index(2),
             input = True, output = False)
         self.stream.start_stream()
 
     def cb_recording(self, in_data, frame_count, time_info, status):
         self.wavefile.writeframes(in_data)
 
-        np_data = np.frombuffer(in_data, dtype=np.int16).astype(np.float32)
+        np_data = np.frombuffer(in_data, dtype=NUMPY_FORMAT).astype(np.float32)
+
+        with self.lock:
+            self.signal_data.append(np_data)
+            if self.is_stop_requested:
+                return (None, pyaudio.paComplete)
+
+        return (None, pyaudio.paContinue)
+
+    def cb_recording_i24(self, in_data, frame_count, time_info, status):
+        self.wavefile.writeframes(in_data)
+
+        np_data = _i24_from_raw(in_data).astype(np.float32)
 
         with self.lock:
             self.signal_data.append(np_data)
