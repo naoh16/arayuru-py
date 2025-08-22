@@ -2,23 +2,27 @@
 # vim: ft=python ts=4 sw=4 et
 # Recording application
 #
-# Requirement
-#   PyQt5
-#   pyqtgraph
-#   pyaudio
+# dependencies = [
+#     "pyaudio",
+#     "pyqtgraph",
+#     "pyside6<6.9",
+# ]
 #
-# You can install them as below command:
-#   $ conda install pyqt=5 pyqtgraph
-#   $ python -m pip install pyaudio
+# Note:
+#   - PySide < 6.9.1 is needed. See also: https://github.com/pyqtgraph/pyqtgraph/issues/3328
 #
-# Copyright (c) 2015-2020 Sunao Hara, Okayama University.
+# Copyright (c) 2015-2025 Sunao Hara, Okayama University.
+#
 
 import os
 import sys
 import codecs
 import re
 
-from PyQt5 import QtGui, QtCore
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import (QApplication, QMainWindow, QFileDialog,
+                               QGridLayout, QWidget, 
+                               QTextEdit, QPushButton, QLineEdit)
 import pyqtgraph as pg
 
 import pyaudio
@@ -79,9 +83,9 @@ class WavePlotWidget(pg.PlotWidget):
             raw_data = wf.readframes( wf.getnframes() )
             self.add_waveform(np.frombuffer(raw_data, dtype=np.int16))
 
-class MyWidget(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent=parent)
+class MyWidget(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.wave_recorder = WaveRecorder()
         self.wave_player = WavePlayer()
@@ -94,23 +98,23 @@ class MyWidget(QtGui.QWidget):
     def keyPressEvent(self, e):
 
         # KEY_LEFT:
-        if e.key() == QtCore.Qt.Key_Left:
+        if e.key() == Qt.Key_Left:
             self.previous_datafile()
             return
 
         # KEY_RIGHT:
-        if e.key() == QtCore.Qt.Key_Right:
+        if e.key() == Qt.Key_Right:
             self.next_datafile()
             return
 
         # KEY_SPACE:
-        if e.key() == QtCore.Qt.Key_Space:
+        if e.key() == Qt.Key_Space:
             if self.rec_button.isEnabled():
                 self.rec_button.click()
             return
 
     def set_record_timer(self):
-        self.record_timer = QtCore.QTimer()
+        self.record_timer = QTimer()
         self.record_timer.timeout.connect(self.onRecordData)
         self.record_timer.start(REFRESH_INTERVAL_MS)
 
@@ -120,7 +124,7 @@ class MyWidget(QtGui.QWidget):
         self.wave_widget.add_waveform(frames)
 
     def set_play_timer(self):
-        self.play_timer = QtCore.QTimer()
+        self.play_timer = QTimer()
         self.play_timer.timeout.connect(self.onPlayData)
         self.play_timer.start(REFRESH_INTERVAL_MS)
 
@@ -144,34 +148,34 @@ class MyWidget(QtGui.QWidget):
         self.open_readfile_button.clicked.connect(self.open_readfile)
 
     def init_ui(self):
-        self.rec_button = QtGui.QPushButton("REC START", parent=self)
+        self.rec_button = QPushButton("REC START", parent=self)
         self.rec_button.setFixedHeight(50)
-        self.play_button  = QtGui.QPushButton("PLAY", parent=self)
+        self.play_button  = QPushButton("PLAY", parent=self)
         self.play_button.setFixedHeight(50)
 
-        self.previous_button = QtGui.QPushButton("<-", parent=self)
+        self.previous_button = QPushButton("<-", parent=self)
         self.previous_button.setFixedHeight(50)
-        self.next_button     = QtGui.QPushButton("->", parent=self)
+        self.next_button     = QPushButton("->", parent=self)
         self.next_button.setFixedHeight(50)
-        #self.zoomup_button   = QtGui.QPushButton("+", parent=self)
-        #self.zoomdown_button = QtGui.QPushButton("-", parent=self)
+        #self.zoomup_button   = QPushButton("+", parent=self)
+        #self.zoomdown_button = QPushButton("-", parent=self)
 
-        self.open_readfile_button = QtGui.QPushButton("LOAD", parent=self)
+        self.open_readfile_button = QPushButton("LOAD", parent=self)
 
-        self.reading_text = QtGui.QTextEdit(self)
+        self.reading_text = QTextEdit(self)
         self.reading_text.setFontPointSize(20)
         self.reading_text.setReadOnly(True)
         self.reading_text.setText(u"あらゆる現実をすべて自分の方へねじ曲げたのだ。")
 
-        self.datafile_text = QtGui.QLineEdit("(null)", self)
+        self.datafile_text = QLineEdit("(null)", self)
         self.datafile_text.setReadOnly(True)
-        self.filenum_text = QtGui.QLineEdit("0 / 0", self)
+        self.filenum_text = QLineEdit("0 / 0", self)
         self.filenum_text.setReadOnly(True)
-        self.filename_text = QtGui.QLineEdit("(null).wav", self)
+        self.filename_text = QLineEdit("(null).wav", self)
 
         self.wave_widget = WavePlotWidget()
 
-        layout = QtGui.QGridLayout()
+        layout = QGridLayout()
 
         layout.addWidget(self.datafile_text, 0, 0, 1, 2)
         layout.addWidget(self.open_readfile_button, 0, 2, 1, 1)
@@ -232,7 +236,7 @@ class MyWidget(QtGui.QWidget):
         self.update_wavedata()
 
     def open_readfile(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self, u'読み上げリストファイルを開く', filter=r'Text Files(*.txt +.tsv *.list);;All Files(*.*)')
+        filename = QFileDialog.getOpenFileName(self, u'読み上げリストファイルを開く', filter=r'Text Files(*.txt +.tsv *.list);;All Files(*.*)')
         if os.path.isfile(filename):
             self.reading_script.load_file(filename)
             self.update_wavedata()
@@ -304,7 +308,9 @@ class MyWidget(QtGui.QWidget):
 class ReadingScript():
     def __init__(self):
         self._filename = ""
-        self._script_data = list({'number': 1, 'id': 'A01', 'text': 'あらゆる現実をすべて自分の方へねじ曲げたのだ。'}) # this is dummy data
+        self._script_data = [
+            {'number': 1, 'id': 'A01', 'text': 'あらゆる現実をすべて自分の方へねじ曲げたのだ。'}
+        ] # this is dummy data
         self._current_text_number = 1  # This number should be start with 1 if this instance is activated
 
     def dump(self):
@@ -492,11 +498,11 @@ def main():
     if not os.path.exists(DIRNAME):
         os.mkdir(DIRNAME)
 
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     my_widget = MyWidget(parent=None)
 
     ### Main Window
-    main_window = QtGui.QMainWindow()
+    main_window = QMainWindow()
     main_window.setWindowTitle("ARAYURU.PY")
     main_window.setCentralWidget(my_widget)
     main_window.move(100, 100)
@@ -507,7 +513,7 @@ def main():
     except IndexError:
         my_widget.load_datafile(None)
 
-    return app.exec_()
+    return app.exec()
 
 if __name__ == '__main__':
     try:

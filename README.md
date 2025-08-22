@@ -1,28 +1,35 @@
 # arayuru-py
-Python3/PyQtGraph(PyQt5)/PyAudioで作った読み上げ音声収録ツール
+Python3/PyQtGraph(PySide6)/PyAudioで作った読み上げ音声収録ツール
 
 ## Requirement
 
-   - Python 3.7.x
-   - PyQt5
+   - Python >= 3.11
+   - PySide6 < 6.9
    - pyqtgraph
    - pyaudio
 
 ## Installation
 
-### Native envritonment
+### a) uv (recommended)
 
-    $ pip install pyqt5 pyqtgraph
+- Install `uv`: https://docs.astral.sh/uv/getting-started/installation/
+- Install packages
+
+    $ uv sync
+
+### b) Native envrinment
+
+    $ pip install "pyside6<6.9" pyqtgraph
     $ pip install pyaudio
 
-### Via venv module (recommended)
+### b) venv module
 
-    $ python -mvenv .py
-    $ .py/bin/activate
-    (.py)$ pip install pyqt5 pyqtgraph
-    (.py)$ pip install pyaudio
+    $ python -mvenv --prompt arayuru .env
+    $ .env/bin/activate
+    (arayuru)$ pip install "pyside6<6.9" pyqtgraph
+    (arayuru)$ pip install pyaudio
 
-- Note: If you use Windows, `.py/bin/activate` should be replaced with `.py\Script\activate`
+- Note: If you use Windows, `.env/bin/activate` should be replaced with `.env\Script\activate`
 
 ### Troubleshooting
 
@@ -31,17 +38,21 @@ Python3/PyQtGraph(PyQt5)/PyAudioで作った読み上げ音声収録ツール
 
 ## Usage
 
-### Native python
+### a) uv (recommended)
+
+    $ uv run arayuru.py sample.txt
+
+### b) Native python
 
     $ python arayuru.py sample.txt
 
-### Via venv module (recommended)
+### c) venv module
 
-    $ .py/bin/python arayuru.py sample.txt
+    $ .env/bin/python arayuru.py sample.txt
 
-- Note: If you use Windows, `.py/bin/python` should be replaced with `.py\Script\python`
+- Note: If you use Windows, `.env/bin/python` should be replaced with `.env\Script\python`
 
 ## Windows 10 Executable
 
-Google Driveにexeファイルと関連DLLをパッケージングしたzipファイルが置いてあります．
+~Google Driveにexeファイルと関連DLLをパッケージングしたzipファイルが置いてあります．~
   - https://drive.google.com/drive/folders/0B4VPoQXZgUWHMng4OW43N3phMjA?usp=sharing
